@@ -1,112 +1,89 @@
-import { App, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import {
+  App,
+  Modal,
+  Notice,
+  Plugin,
+  PluginSettingTab,
+  Setting,
+  MarkdownView,
+} from "obsidian";
+import { Editor } from "codemirror";
 
+import * as pangu from "./pangu.min.js";
 interface MyPluginSettings {
-	mySetting: string;
+  mySetting: string;
 }
 
 const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
-}
+  mySetting: "default",
+};
 
 export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+  settings: MyPluginSettings;
 
-	async onload() {
-		console.log('loading plugin');
+  async onload() {
+    await this.loadSettings();
 
-		await this.loadSettings();
+    this.addCommand({
+      id: "format",
+      name: "format",
+      callback: () => {
+        this.format();
+      },
+    });
 
-		this.addRibbonIcon('dice', 'Sample Plugin', () => {
-			new Notice('This is a notice!');
-		});
+    this.addSettingTab(new SampleSettingTab(this.app, this));
+  }
 
-		this.addStatusBarItem().setText('Status Bar Text');
+  getEditor(): Editor {
+    let view = this.app.workspace.activeLeaf.view as MarkdownView;
+    return view.sourceMode.cmEditor;
+  }
 
-		this.addCommand({
-			id: 'open-sample-modal',
-			name: 'Open Sample Modal',
-			// callback: () => {
-			// 	console.log('Simple Callback');
-			// },
-			checkCallback: (checking: boolean) => {
-				let leaf = this.app.workspace.activeLeaf;
-				if (leaf) {
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-					return true;
-				}
-				return false;
-			}
-		});
+  format() {
+    const editor = this.getEditor();
+    const value = editor.getValue();
 
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+    const formatValue = pangu.spacing(value);
+    editor.setValue(formatValue);
+  }
 
-		this.registerCodeMirror((cm: CodeMirror.Editor) => {
-			console.log('codemirror', cm);
-		});
+  async loadSettings() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
 
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
-
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-	}
-
-	onunload() {
-		console.log('unloading plugin');
-	}
-
-	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-	}
-
-	async saveSettings() {
-		await this.saveData(this.settings);
-	}
-}
-
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		let {contentEl} = this;
-		contentEl.empty();
-	}
+  async saveSettings() {
+    await this.saveData(this.settings);
+  }
 }
 
 class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+  plugin: MyPlugin;
 
-	constructor(app: App, plugin: MyPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
+  constructor(app: App, plugin: MyPlugin) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
 
-	display(): void {
-		let {containerEl} = this;
+  display(): void {
+    let { containerEl } = this;
 
-		containerEl.empty();
+    containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Settings for my awesome plugin.'});
+    containerEl.createEl("h2", { text: "Settings for my awesome plugin." });
 
-		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue('')
-				.onChange(async (value) => {
-					console.log('Secret: ' + value);
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
-	}
+    new Setting(containerEl)
+      .setName("Setting #1")
+      .setDesc("It's a secret")
+      .addText(text =>
+        text
+          .setPlaceholder("Enter your secret")
+          .setValue("")
+          .onChange(async value => {
+            console.log("Secret: " + value);
+            this.plugin.settings.mySetting = value;
+            await this.plugin.saveSettings();
+          })
+      );
+  }
 }
