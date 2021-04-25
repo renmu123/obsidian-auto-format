@@ -21,5 +21,5 @@ export default {
     banner,
   },
   external: ["obsidian"],
-  plugins: [typescript(), nodeResolve({ browser: false }), commonjs()],
+  plugins: [typescript(), nodeResolve({ browser: true }), commonjs()],
 };
